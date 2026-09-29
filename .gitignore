@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# PlatformIO / STM32 build output
+.pio/
+build/
+Debug/
+Release/
+
+# Local secrets and runtime logs
+secrets.h
+.env
+.runtime-logs/

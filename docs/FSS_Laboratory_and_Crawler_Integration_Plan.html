@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>FSS Node Laboratory and Crawler Integration Plan</title>
+<style>
+  body { font-family: Arial, sans-serif; font-size: 11pt; line-height: 1.4; }
+  h1 { font-size: 20pt; }
+  h2 { font-size: 15pt; margin-top: 18pt; }
+  h3 { font-size: 12pt; margin-top: 12pt; }
+  pre { font-family: 'Courier New', monospace; font-size: 10pt; background: #f3f3f3; padding: 8pt; }
+  table { border-collapse: collapse; }
+  th, td { border: 1px solid #888; padding: 4pt 8pt; text-align: left; vertical-align: top; }
+  th { background: #e8e8e8; }
+</style>
+</head>
+<body>
+
+<h1>FSS Node Laboratory and Crawler Integration Plan</h1>
+<p><b>Project:</b> UJAALLC-4WIFI (github.com/mieirs-hue/UJAALLC-4WIFI)<br>
+<b>Host:</b> Jetson #1 — Jetson Orin Nano, Ubuntu, 192.168.1.160 (accessed via VS Code Remote Tunnel)<br>
+<b>Date:</b> 2026-09-29<br>
+<b>Master log:</b> https://gemini.google.com/app/7330c42c5dfb9a9e</p>
+
+<h2>1. Architecture Freeze: FSSS-4 Laboratory</h2>
+<p>UJAALLC-SPIRAL (N05–N24) is paused. The original four FSS nodes remain the laboratory reference system. This concentrates engineering effort on the FSS-C01 crawler instead of multiplying integration variables. The spiral work is preserved in its own repository and returns in Phase 2.</p>
+
+<h3>Frozen architecture (Phase 1)</h3>
+<pre>FSSS-N01 ─┐
+FSSS-N02 ─┼──► Jetson Orin Nano (Jetson #1)
+FSSS-N03 ─┤       │
+FSSS-N04 ─┘       ├── RF confidence / fusion
+                  ├── TF-Luna confirmation
+                  ├── audio / buzzer logic
+                  ├── event recording / replay
+                  └── 3D dashboard</pre>
+
+<h3>Rule</h3>
+<p>No architectural change to N01–N04 unless a real, reproduced defect appears. Every change is verified physically before it is saved.</p>
+
+<h2>2. Crawler Subsystem (FSS-C01)</h2>
+<pre>FSS 4-node laboratory
+        │
+        ▼
+spatial event / target estimate
+        │
+        ▼
+crawler waypoint
+        │
+        ▼
+local crawler sensing
+        │
+        ├── 360° LiDAR
+        ├── camera
+        ├── thermal
+        ├── bumper sensors
+        └── IMU / drive telemetry
+        │
+        ▼
+deterministic navigation + safety</pre>
+
+<h2>3. Validation Capabilities (N01–N04)</h2>
+<ul>
+  <li>RF baseline logic (baseline freeze during disturbance, per-node CONF thresholds)</li>
+  <li>Buzzer/audio acknowledgement loop (audio_ready and last_audio_cmd round-trip telemetry)</li>
+  <li>TF-Luna corroboration</li>
+  <li>JSONL event recording and replay</li>
+  <li>3D visualization</li>
+  <li>Fused target state (RF fusion + occupancy grid)</li>
+</ul>
+
+<h2>4. Milestones</h2>
+<h3>Milestone A — Lock FSSS-4</h3>
+<p>Bring N01–N04 to a known-good, documented state. Stop changing the architecture unless a real defect appears.</p>
+
+<h3>Milestone B — Crawler local autonomy</h3>
+<p>Chassis, power, STM32 motor control, LiDAR, camera, thermal sensing, and safe waypoint following. The crawler is tested independently first:</p>
+<pre>manual waypoint → local obstacle avoidance → safe motor control → arrival</pre>
+
+<h3>Milestone C — Connect the two</h3>
+<p>Only after A and B both work independently:</p>
+<pre>FSS event → target coordinate → crawler dispatch request → safety validation → crawler movement</pre>
+
+<h2>5. Expansion Roadmap</h2>
+<table>
+  <tr><th>Phase</th><th>Scope</th></tr>
+  <tr><td>Phase 1</td><td>FSSS-4 + crawler</td></tr>
+  <tr><td>Phase 2</td><td>FSSS-24 + crawler</td></tr>
+  <tr><td>Phase 3</td><td>Distributed field + mobile verification</td></tr>
+</table>
+
+<h2>6. Milestone B Outline — Crawler Hardware and Power (Working Draft)</h2>
+<p>Items marked <b>TBD</b> are open decisions. Measured values replace estimates as parts arrive.</p>
+
+<h3>B1. Control hierarchy (safety authority)</h3>
+<pre>AI / semantic reasoning (advisory only, never in the control loop)
+        │
+Jetson: deterministic spatial fusion + navigation constraints
+        │
+STM32: real-time actuator enforcement
+        │
+Motors</pre>
+<p>The STM32 and local sensing can stop the crawler regardless of any higher-level recommendation.</p>
+
+<h3>B2. Chassis and mechanical</h3>
+<ul>
+  <li>Drive type (tracked or wheeled): <b>TBD</b></li>
+  <li>360° LiDAR mounted highest, with an unobstructed horizontal field</li>
+  <li>Camera and thermal sensor forward-facing, rigidly co-mounted</li>
+  <li>Bumpers on front and rear</li>
+  <li>Onboard compute: <b>TBD</b></li>
+</ul>
+
+<h3>B3. Power architecture</h3>
+<ul>
+  <li>Main battery chemistry, voltage, and capacity: <b>TBD</b></li>
+  <li>Separate motor rail and logic rail so motor current spikes cannot brown out compute or sensors</li>
+  <li>Main fuse at the battery</li>
+  <li>Physical E-stop that removes motor power in hardware, independent of software</li>
+  <li>Regulated supplies for compute and sensors at each component's rated input</li>
+  <li>Battery voltage and current monitoring reported in telemetry</li>
+</ul>
+
+<table>
+  <tr><th>Component</th><th>Rail voltage</th><th>Typical current</th><th>Peak current</th><th>Source</th></tr>
+  <tr><td>Drive motors</td><td>TBD</td><td>TBD</td><td>TBD</td><td>measure</td></tr>
+  <tr><td>Onboard compute</td><td>TBD</td><td>TBD</td><td>TBD</td><td>datasheet / measure</td></tr>
+  <tr><td>360° LiDAR</td><td>TBD</td><td>TBD</td><td>TBD</td><td>datasheet</td></tr>
+  <tr><td>Camera</td><td>TBD</td><td>TBD</td><td>TBD</td><td>datasheet</td></tr>
+  <tr><td>Thermal sensor</td><td>TBD</td><td>TBD</td><td>TBD</td><td>datasheet</td></tr>
+  <tr><td>STM32 + IMU + bumpers</td><td>TBD</td><td>TBD</td><td>TBD</td><td>datasheet</td></tr>
+</table>
+
+<h3>B4. STM32 motor control responsibilities</h3>
+<ul>
+  <li>Owns motor PWM directly</li>
+  <li>Command watchdog: stops motors if no valid command arrives within a set timeout (value TBD)</li>
+  <li>Enforces speed and acceleration limits</li>
+  <li>Bumper contact and E-stop input cause an immediate stop</li>
+  <li>Reports wheel/track encoder, IMU, and fault telemetry upstream</li>
+</ul>
+
+<h3>B5. Local autonomy test ladder</h3>
+<table>
+  <tr><th>Gate</th><th>Test</th><th>Pass criterion</th></tr>
+  <tr><td>B-1</td><td>Motors bench-tested with wheels/tracks lifted</td><td>Correct direction and speed response</td></tr>
+  <tr><td>B-2</td><td>Watchdog and E-stop test</td><td>Motors stop on command loss and on E-stop</td></tr>
+  <tr><td>B-3</td><td>Low-speed manual drive</td><td>Stable, controllable motion</td></tr>
+  <tr><td>B-4</td><td>Bumper stop</td><td>Immediate stop on contact</td></tr>
+  <tr><td>B-5</td><td>LiDAR obstacle stop</td><td>Stops before a placed obstacle</td></tr>
+  <tr><td>B-6</td><td>Manual waypoint</td><td>Reaches a waypoint entered by the operator</td></tr>
+  <tr><td>B-7</td><td>Waypoint with avoidance</td><td>Reaches the waypoint around an obstacle</td></tr>
+</table>
+
+<h3>B6. Dispatch interface (draft, for Milestone C)</h3>
+<ul>
+  <li><b>Dispatch request:</b> source event ID, target waypoint (x, z in feet, dashboard frame), confidence, timestamp</li>
+  <li><b>Crawler status:</b> state, pose, battery, active faults, last acknowledged request</li>
+  <li>The crawler validates every request against its own safety state before moving.</li>
+</ul>
+
+</body>
+</html>
