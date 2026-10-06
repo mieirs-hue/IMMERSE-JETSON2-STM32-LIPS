@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="580" viewBox="0 0 1200 580" role="img" aria-labelledby="title desc">
+  <title id="title">GitLens repository history snapshot</title>
+  <desc id="desc">A selected linear history of FSS dashboard commits culminating in spatial advisory gates, alongside the single crawler planning commit in the IMMERSE repository as of October 6, 2026.</desc>
+  <defs>
+    <style>
+      .heading { font: 700 22px Arial, sans-serif; fill: #172b4d; }
+      .label { font: 700 16px Arial, sans-serif; fill: #24364b; }
+      .commit { font: 13px 'DejaVu Sans Mono', monospace; fill: #25374b; }
+      .note { font: 13px Arial, sans-serif; fill: #526273; }
+      .line { stroke: #4776c5; stroke-width: 4; }
+      .node { fill: #fff; stroke: #4776c5; stroke-width: 4; }
+      .crawler-line { stroke: #6a8f45; stroke-width: 4; }
+      .crawler-node { fill: #fff; stroke: #6a8f45; stroke-width: 4; }
+      .panel { fill: #f7f9fc; stroke: #d4dce6; stroke-width: 1.5; rx: 12; }
+    </style>
+  </defs>
+  <rect width="1200" height="580" fill="#fff"/>
+  <text x="600" y="40" text-anchor="middle" class="heading">GitLens history snapshot · selected project milestones</text>
+  <rect x="30" y="65" width="1140" height="330" class="panel"/>
+  <text x="55" y="98" class="label">UJAALLC-4WIFI · master · dashboard and FSS</text>
+
+  <line x1="80" y1="155" x2="80" y2="335" class="line"/>
+  <circle cx="80" cy="160" r="8" class="node"/>
+  <circle cx="80" cy="205" r="8" class="node"/>
+  <circle cx="80" cy="250" r="8" class="node"/>
+  <circle cx="80" cy="295" r="8" class="node"/>
+  <circle cx="80" cy="340" r="8" class="node"/>
+
+  <text x="105" y="165" class="commit">5a8e394  2026-10-01  advisory spatial boundary + validation gates (HEAD)</text>
+  <text x="105" y="210" class="commit">c178cb1  2026-09-29  mark cached crawler telemetry offline on disconnect</text>
+  <text x="105" y="255" class="commit">6baec4b  2026-09-29  add validated CRAWLER-01 WebSocket + dashboard HUD</text>
+  <text x="105" y="300" class="commit">52d61f7  2026-09-29  freeze Phase 1 architecture; guard 2D zone rings</text>
+  <text x="105" y="345" class="commit">8e30662  2026-08-26  occupancy grid + target-lock visualization</text>
+
+  <rect x="30" y="415" width="1140" height="105" class="panel"/>
+  <text x="55" y="450" class="label">IMMERSE-JETSON2-STM32-LIPS · main</text>
+  <line x1="80" y1="480" x2="80" y2="505" class="crawler-line"/>
+  <circle cx="80" cy="492" r="8" class="crawler-node"/>
+  <text x="105" y="497" class="commit">94943c1  2026-09-29  initial FSS laboratory + crawler integration plan (HEAD)</text>
+  <text x="600" y="555" text-anchor="middle" class="note">Selected commits from local Git history as inspected 2026-10-06; diagram is a summary, not a full graph export or validation record.</text>
+</svg>

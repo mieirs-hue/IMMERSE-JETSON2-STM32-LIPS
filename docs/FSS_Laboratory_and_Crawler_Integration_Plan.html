@@ -5,6 +5,7 @@
 <title>FSS Node Laboratory and Crawler Integration Plan</title>
 <style>
   body { font-family: Arial, sans-serif; font-size: 11pt; line-height: 1.4; }
+  main { max-width: 980px; margin: 0 auto; }
   h1 { font-size: 20pt; }
   h2 { font-size: 15pt; margin-top: 18pt; }
   h3 { font-size: 12pt; margin-top: 12pt; }
@@ -12,18 +13,23 @@
   table { border-collapse: collapse; }
   th, td { border: 1px solid #888; padding: 4pt 8pt; text-align: left; vertical-align: top; }
   th { background: #e8e8e8; }
+  figure { margin: 18pt 0; page-break-inside: avoid; }
+  figure img { display: block; width: 100%; height: auto; }
+  figcaption { margin-top: 5pt; color: #39485a; font-size: 9pt; }
+  .callout { border-left: 4px solid #4776c5; background: #f2f6fc; padding: 8pt 12pt; }
 </style>
 </head>
 <body>
+<main>
 
 <h1>FSS Node Laboratory and Crawler Integration Plan</h1>
 <p><b>Project:</b> UJAALLC-4WIFI (github.com/mieirs-hue/UJAALLC-4WIFI)<br>
-<b>Host:</b> Jetson #1 — Jetson Orin Nano, Ubuntu, 192.168.1.160 (accessed via VS Code Remote Tunnel)<br>
-<b>Date:</b> 2026-09-29<br>
+<b>Host:</b> Jetson #1 — Jetson Orin Nano, Ubuntu, GL-MT3000 Wi-Fi address verified as 192.168.8.196 on 2026-10-06 (accessed via VS Code Remote Tunnel)<br>
+<b>Plan date:</b> 2026-09-29 · <b>Status review:</b> 2026-10-06<br>
 <b>Master log:</b> https://gemini.google.com/app/7330c42c5dfb9a9e</p>
 
 <h2>1. Architecture Freeze: FSSS-4 Laboratory</h2>
-<p>UJAALLC-SPIRAL (N05–N24) is paused. The original four FSS nodes remain the laboratory reference system. This concentrates engineering effort on the FSS-C01 crawler instead of multiplying integration variables. The spiral work is preserved in its own repository and returns in Phase 2.</p>
+<p>UJAALLC-SPIRAL is the separate repository for the 24-node/trilateral-motion research stream. Its N05–N24 expansion remains deferred to Phase 2; the original four FSS nodes remain the Phase 1 laboratory reference system. This concentrates engineering effort on the FSS-C01 crawler instead of multiplying integration variables. No 24-node live bring-up or integration with the crawler is established by this plan.</p>
 
 <h3>Frozen architecture (Phase 1)</h3>
 <pre>FSSS-N01 ─┐
@@ -58,6 +64,11 @@ local crawler sensing
         │
         ▼
 deterministic navigation + safety</pre>
+
+<figure>
+  <img src="figures/fsss-crawler-data-flow.png" alt="FSSS-4 to Jetson 1 to FSS-C01 data and safety boundary diagram">
+  <figcaption><b>Figure 1.</b> Proposed system boundary. ESP32 nodes provide measurements; Jetson #1 fuses and displays them. Any future request remains advisory until Jetson #2 validates it locally and the STM32 enforces its watchdog, limits, and E-stop. Solid links represent the current sensor/dashboard path; dashed links are proposed and are not a live motion interface.</figcaption>
+</figure>
 
 <h2>3. Validation Capabilities (N01–N04)</h2>
 <ul>
@@ -101,6 +112,32 @@ STM32: real-time actuator enforcement
         │
 Motors</pre>
 <p>The STM32 and local sensing can stop the crawler regardless of any higher-level recommendation.</p>
+<h3>B1a. Ollama advisory service — setup review, 2026-10-06</h3>
+<p>Official Ollama ARM64 release <code>0.35.1</code> was installed in the
+development Jetson user's home directory because non-interactive sudo was
+unavailable. The enabled <code>systemctl --user</code> service responds at
+<code>http://127.0.0.1:11434/api/version</code> and
+<code>/api/tags</code>. Its listener was verified as localhost-only.
+This is a user-session service, not a verified unattended boot service;
+operation after logout or reboot remains a separate validation gate.</p>
+<p>No unrestricted <code>0.0.0.0</code> listener or wildcard CORS override was
+configured. Ollama exposes an HTTP API; it is not the crawler WebSocket
+interface. A backend on the same Jetson can query it locally. Access from
+another Jetson or workstation requires an authenticated tunnel or a separately
+validated, restricted proxy. Cloud features are disabled, and no dashboard,
+sensor, or motor-control code was wired to the service.</p>
+<p>The <code>qwen2.5:3b</code> download completed successfully; the local
+<code>/api/tags</code> endpoint listed its Q4_K_M model weights (approximately
+1.93 GB), while <code>/api/ps</code> confirmed that no model was loaded.
+At the setup check, the host had approximately 7.3 GiB RAM, less than
+1 GiB available, and no swap. The service is limited to 768 MiB of host
+memory, one loaded model, and one concurrent inference request. Downloading
+model weights does not validate inference; loading or generating with the
+requested <code>qwen2.5:3b</code> is deferred until memory headroom is
+established and appropriate limits are reviewed. The GPU discovery log
+reported the Orin GPU through CUDA 13, but no model inference or acceleration
+benchmark has been verified. Model output remains advisory only and must never
+authorize motion or bypass STM32 safety enforcement.</p>
 
 <h3>B2. Chassis and mechanical</h3>
 <ul>
@@ -159,5 +196,144 @@ Motors</pre>
   <li>The crawler validates every request against its own safety state before moving.</li>
 </ul>
 
+<h2>7. Dashboard and telemetry integration status</h2>
+<p>The UJAALLC-4WIFI dashboard contains a CRAWLER-01 [JETSON #2] panel and a
+dedicated <code>/ws/crawler/{crawler_id}</code> WebSocket. The gateway validates
+the crawler ID and required telemetry fields (pose, heading, battery,
+LIPS target/range, and STM32 RPM, motor temperature, and E-stop state), retains
+the latest valid packet, and relays connection and telemetry messages to browser
+clients. The UI labels a disconnected crawler offline rather than treating
+cached values as live.</p>
+<p class="callout"><b>Safety and scope:</b> This gateway is a display/telemetry
+integration. A crawler panel or spatial advisory coordinate is not a dispatch
+implementation, surveyed waypoint, safety-rated stop, or permission to move.
+No crawler motion command path is documented as implemented in this plan.</p>
+
+<h3>Observed status review — 2026-10-06</h3>
+<ul>
+  <li><b>User-reported hardware status:</b> The microphone and speaker are
+      not connected; wiring and audio validation are deferred until tomorrow.
+      No live microphone acquisition or speaker output is claimed.</li>
+  <li><b>User-reported device address:</b> <code>http://192.168.5.1</code>
+      was supplied for the ESP32-S3/Nucleo setup. Device identity, network
+      reachability, and the page's function have not been verified. ESP32-S3
+      and Nucleo-L476RG are distinct boards; this address does not establish
+      which board hosts the page or replace the Jetson dashboard address.</li>
+  <li>The dashboard was started on the development Jetson at
+      <code>http://127.0.0.1:8000</code>; the page returned HTTP 200 and the
+      browser connected to <code>/ws/dashboard</code>.</li>
+  <li>The CRAWLER-01 panel reported <b>DISCONNECTED / STANDBY</b> during the
+      check. No ESP32/Nucleo USB serial device was enumerated on that host;
+      therefore no MCU or crawler live telemetry was verified.</li>
+  <li>At the initial check, Jetson #1 was on FWA_ZG7P6R at
+      <code>192.168.1.174</code>; the plan's earlier
+      <code>192.168.1.160</code> value did not match that observed address.
+      Later on 2026-10-06, the Jetson successfully joined the
+      <code>GL-MT3000-893</code> SSID and received DHCP address
+      <code>192.168.8.196/24</code> with gateway <code>192.168.8.1</code>.
+      This verifies association and current routing only; a persistent DHCP
+      reservation, repeat-after-reboot behavior, repeater/internet behavior,
+      and other clients' reachability were not verified.</li>
+  <li>The dashboard remained bound to <code>127.0.0.1:8000</code> after the
+      cutover. Its local HTTP page still returned 200. Remote LAN reachability
+      was neither configured nor tested; interactive dashboard controls are
+      not exposed on the new Wi-Fi network.</li>
+  <li>The I2C LCD responded at bus 7 / address <code>0x27</code> during an
+      earlier host check. The user subsequently reported seeing the two-line
+      company splash; that visual confirmation is user-reported, not an
+      instrumented measurement.</li>
+</ul>
+
+<h2>8. GitLens repository history and project evidence</h2>
+<p>Figure 2 is a compact redraw of the GitLens commit-graph/history view,
+using commit IDs, dates, and subjects available in the local repositories on
+2026-10-06. It summarizes selected milestones, not every commit, branch, test,
+or hardware-validation result. The crawler/STM32 repository currently has one
+initial planning commit; its existence does not establish that the crawler
+hardware or toolchain is commissioned.</p>
+
+<h3>UJAALLC-SPIRAL — related FSSS research repository</h3>
+<p><a href="https://github.com/mieirs-hue/UJAALLC-SPIRAL">mieirs-hue/UJAALLC-SPIRAL</a>
+is a private GitHub repository whose metadata describes a 24-board trilateral
+motion-detection project. Its accessible project documentation describes an
+FSSS dashboard and telemetry hub with FSS-N01–N04 as the active node set; the
+repository is therefore tracked here as the preserved Phase 2 expansion stream,
+not as a currently verified live 24-node deployment. The main-branch history
+visible on 2026-10-06 includes <code>76829ab</code> (initial FSSS-24 topology
+import) and <code>62ec67a</code> (spatial-boundary research documentation).</p>
+<p>Inspection of the accessible dashboard source and indexed repository code
+did not verify an Ollama integration, an FSS-C01 crawler service, LIPS
+telemetry, or a crawler WebSocket. Accordingly, this plan does not assign
+UJAALLC-SPIRAL as the confirmed Jetson #2 crawler dashboard. That relationship
+remains an open repository-verification item; the crawler telemetry currently
+documented in Section 7 is in UJAALLC-4WIFI. Its contents were initially
+inspected through the connected GitHub integration. After the user signed in
+on 2026-10-06, the private repository opened successfully in the browser.
+Local Git still lacked HTTPS authentication during the subsequent check;
+UJAALLC-SPIRAL has not yet been added as a complete Git checkout in Explorer,
+and a local GitLens graph for it has not been verified.</p>
+<p>A second dashboard source was found under
+<code>FSSS-24-DASHBOARD-FOUNDATION-1.0/jetson_engine/dashboard_server.py</code>
+in UJAALLC-SPIRAL. Its Git blob
+<code>fe0f2e38d795ac7d5cf2e39465f2dfd64f016fbc</code> was verified when importing
+a source-only preview into the local workspace. The folder is explicitly
+labeled as a preview, not a Git clone; it lacks the supporting modules and
+has not been launched as a live dashboard. Its inspected source exposes the
+FSS fleet dashboard, with no Ollama or crawler interface found. The Gemini
+conversation at <a href="https://gemini.google.com/app/4524eecf1706ef64">the
+user-provided dashboard reference</a> redirected to an unauthenticated sign-in
+page, so the dashboard described in that conversation remains unidentified.</p>
+
+<figure>
+  <img src="figures/gitlens-history-snapshot.png" alt="Selected GitLens history for UJAALLC-4WIFI and IMMERSE-JETSON2-STM32-LIPS">
+  <figcaption><b>Figure 2.</b> Selected GitLens history: FSS dashboard development progresses from occupancy visualization through architecture freeze, crawler telemetry display, stale-data handling, and advisory spatial gates. The IMMERSE repository's visible main history is its initial integration-plan commit. IDs are abbreviated Git hashes.</figcaption>
+</figure>
+
+<h3>Repository role matrix — Phase 1 and Phase 2</h3>
+<p>This matrix distinguishes observed repository contents from planned
+deployment roles. Shared or similar code does not establish a live connection
+between repositories. The existing four-node laboratory and crawler safety
+boundaries remain unchanged.</p>
+<table>
+  <tr><th>Repository</th><th>Phase 1 responsibility</th><th>Phase 2 responsibility / next gate</th><th>Evidence and access</th></tr>
+  <tr>
+    <td><a href="https://github.com/mieirs-hue/UJAALLC-4WIFI">UJAALLC-4WIFI</a></td>
+    <td>Four-node laboratory reference; Jetson #1 dashboard, fusion/advisory display, and CRAWLER-01 telemetry panel. Jetson-connected LCD diagnostic HUD.</td>
+    <td>Preserve N01–N04 behavior while validating any expanded topology and crawler telemetry contract. Dispatch remains a future, separately validated interface.</td>
+    <td>Local checkout; dashboard page verified locally. Crawler panel was disconnected, so live Jetson #2 telemetry remains unverified.</td>
+  </tr>
+  <tr>
+    <td><a href="https://github.com/mieirs-hue/UJAALLC-SPIRAL">UJAALLC-SPIRAL</a></td>
+    <td>Preserved research reference; no replacement of the Phase 1 four-node system. User identifies an intended Jetson #2/sensors/Ollama role, which remains unverified in the inspected source.</td>
+    <td>FSSS-24 expansion research, including N05–N24. Identify the intended crawler/Ollama revision and validate interfaces before assigning a runtime role.</td>
+    <td>Private repository accessible through GitHub integration and, after sign-in, the browser. Foundation dashboard source-only preview added locally; complete clone and GitLens graph pending Git authentication.</td>
+  </tr>
+  <tr>
+    <td><a href="https://github.com/mieirs-hue/predator-detector-UJAALLC">predator-detector-UJAALLC</a></td>
+    <td>Related ESP32 lighthouse firmware, Jetson RF telemetry/spatial-engine work, and build/guarded-flash workflow. LCD driver/HUD copies and usage guidance are saved locally.</td>
+    <td>Reconcile shared implementations and board profiles before reusing them in expanded deployments; no independent live crawler/Ollama role is established here.</td>
+    <td>Local checkout. LCD/HUD software tests passed; this does not prove MCU flashing or live sensor arrival.</td>
+  </tr>
+  <tr>
+    <td><a href="https://github.com/mieirs-hue/IMMERSE-JETSON2-STM32-LIPS">IMMERSE-JETSON2-STM32-LIPS</a></td>
+    <td>FSS-C01 integration plan, thesis evidence, and Jetson #2 / STM32 / LIPS commissioning requirements. STM32 remains the intended real-time actuator safety authority.</td>
+    <td>Extend the validated crawler integration to the expanded field only after independent crawler safety and telemetry gates pass.</td>
+    <td>Local checkout containing this HTML/Word plan and figures. Hardware/toolchain commissioning and motor safety tests remain unverified.</td>
+  </tr>
+</table>
+
+<h2>9. Next evidence gates</h2>
+<table>
+  <tr><th>Gate</th><th>Evidence required</th><th>Current state</th></tr>
+  <tr><td>Ollama inference</td><td>Model weights present; sufficient host/GPU memory; successful bounded local generation without impairing telemetry; user-service restart behavior verified</td><td>Local API and service verified; model generation, dashboard integration, and unattended boot behavior not verified</td></tr>
+  <tr><td>UJAALLC-SPIRAL role</td><td>Authenticate a local checkout; identify the intended Jetson #2/Ollama revision and verify its crawler/LIPS interface against the integration contract</td><td>GitHub integration and signed-in browser access verified; local Git authentication pending. Inspected source did not verify crawler, LIPS, or Ollama services</td></tr>
+  <tr><td>Network identity</td><td>GL-MT3000 association, gateway, Jetson address, DHCP reservation and reboot persistence verified</td><td>SSID, gateway, DHCP address, and route verified 2026-10-06; reservation/persistence pending</td></tr>
+  <tr><td>Sensor nodes</td><td>One positively identified N01–N04 ESP32-S3 appears on USB; matching build and telemetry verified</td><td>No MCU USB serial device seen in the 2026-10-06 check</td></tr>
+  <tr><td>Crawler telemetry</td><td>Jetson #2 connection plus changing, timestamped LIPS/STM32 telemetry in dashboard</td><td>Panel was DISCONNECTED / STANDBY</td></tr>
+  <tr><td>Local safety</td><td>Independent STM32 watchdog, hardware E-stop, speed limits, and obstacle veto pass on a raised chassis</td><td>Unverified; hardware/toolchain commissioning remains required</td></tr>
+  <tr><td>Dispatch</td><td>Versioned, expiring request plus Jetson #2 and STM32 local authorization tests</td><td>Not implemented; out of scope for the current display gateway</td></tr>
+</table>
+
+</main>
 </body>
 </html>

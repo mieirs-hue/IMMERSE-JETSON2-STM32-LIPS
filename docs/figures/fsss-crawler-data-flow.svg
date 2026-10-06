@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="650" viewBox="0 0 1200 650" role="img" aria-labelledby="title desc">
+  <title id="title">FSSS-4 and FSS-C01 integration boundary</title>
+  <desc id="desc">Four ESP32 sensor nodes send telemetry to Jetson 1 for fusion and display. Any future waypoint request is advisory and must be independently validated by Jetson 2 and the STM32. The STM32 and local emergency stop retain actuator authority.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#34495e"/>
+    </marker>
+    <marker id="dash-arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#b7791f"/>
+    </marker>
+    <style>
+      .box { rx: 14; stroke-width: 2; }
+      .title { font: 700 20px Arial, sans-serif; fill: #172b4d; }
+      .body { font: 15px Arial, sans-serif; fill: #263746; }
+      .small { font: 13px Arial, sans-serif; fill: #4b5b6a; }
+      .edge { stroke: #34495e; stroke-width: 3; fill: none; marker-end: url(#arrow); }
+      .advisory { stroke: #b7791f; stroke-width: 3; stroke-dasharray: 9 7; fill: none; marker-end: url(#dash-arrow); }
+    </style>
+  </defs>
+  <rect width="1200" height="650" fill="#f7f9fc"/>
+  <text x="600" y="42" text-anchor="middle" class="title">FSSS-4 laboratory → advisory handoff → FSS-C01 local safety</text>
+
+  <rect x="35" y="90" width="240" height="265" class="box" fill="#e8f5e9" stroke="#4b8b52"/>
+  <text x="155" y="125" text-anchor="middle" class="title">FSSS-4 sensors</text>
+  <text x="60" y="170" class="body">ESP32-S3 · N01–N04</text>
+  <text x="60" y="205" class="body">RF / BLE observations</text>
+  <text x="60" y="240" class="body">TF-Luna / health</text>
+  <text x="60" y="285" class="small">Sensors only; no motor control</text>
+  <text x="60" y="315" class="small">UDP telemetry → Jetson #1</text>
+
+  <rect x="350" y="90" width="300" height="265" class="box" fill="#e8f0fe" stroke="#4776c5"/>
+  <text x="500" y="125" text-anchor="middle" class="title">Jetson #1 · FSS dashboard</text>
+  <text x="375" y="170" class="body">Validate and fuse telemetry</text>
+  <text x="375" y="205" class="body">Floorplan, events, recordings</text>
+  <text x="375" y="240" class="body">CRAWLER-01 WebSocket HUD</text>
+  <text x="375" y="285" class="small">Current verified integration is display-only</text>
+  <text x="375" y="315" class="small">No crawler dispatch command implemented</text>
+
+  <rect x="790" y="90" width="350" height="265" class="box" fill="#fff4e5" stroke="#c28a37"/>
+  <text x="965" y="125" text-anchor="middle" class="title">FSS-C01 · Jetson #2</text>
+  <text x="815" y="170" class="body">LIPS target / range</text>
+  <text x="815" y="205" class="body">Localize and detect obstacles</text>
+  <text x="815" y="240" class="body">Validate request and safety state</text>
+  <text x="815" y="285" class="small">Local autonomy remains a separate milestone</text>
+  <text x="815" y="315" class="small">Plan status: compute/storage/toolchain TBD</text>
+
+  <path d="M275 215 L345 215" class="edge"/>
+  <text x="310" y="198" text-anchor="middle" class="small">UDP</text>
+  <path d="M650 290 L785 290" class="advisory"/>
+  <text x="718" y="275" text-anchor="middle" class="small">future request only</text>
+
+  <rect x="790" y="440" width="220" height="150" class="box" fill="#f3e8ff" stroke="#7952a0"/>
+  <text x="900" y="477" text-anchor="middle" class="title">STM32 · Nucleo</text>
+  <text x="815" y="520" class="body">Watchdog / E-stop</text>
+  <text x="815" y="552" class="body">PWM / motor limits</text>
+  <path d="M965 355 L925 435" class="advisory"/>
+  <text x="1000" y="405" class="small">validated setpoint</text>
+
+  <rect x="1030" y="460" width="140" height="105" class="box" fill="#ffe8e8" stroke="#bb5555"/>
+  <text x="1100" y="500" text-anchor="middle" class="title">Motors</text>
+  <text x="1100" y="530" text-anchor="middle" class="small">physical actuation</text>
+  <path d="M1010 515 L1025 515" class="edge"/>
+  <text x="600" y="625" text-anchor="middle" class="small">Solid arrows: implemented telemetry/data path · Dashed arrows: proposed, not enabled for motion</text>
+</svg>
